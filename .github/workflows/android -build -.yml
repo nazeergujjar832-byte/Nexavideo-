@@ -16,13 +16,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Licenses
+        run: yes | sdkmanager --licenses || true
+
       - name: Unzip and Find Project
         run: |
           rm -rf project extracted || true
           ZIP=$(ls *.zip | head -n 1)
-          echo "ZIP: $ZIP"
+          echo "Found ZIP: $ZIP"
           unzip -o "$ZIP" -d extracted
-          ANDROID_DIR=$(find extracted -name "build.gradle.kts" -path "*/android/build.gradle.kts" | head -n 1 | xargs dirname)
+          ANDROID_DIR=$(find extracted -type f -name "gradlew" | head -n 1 | xargs dirname)
           if [ -z "$ANDROID_DIR" ]; then
             ANDROID_DIR=$(find extracted -type d -name android | head -n 1)
           fi
@@ -35,15 +38,8 @@ jobs:
       - name: Build APK
         run: |
           cd project
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug
-          else
-            echo "gradlew not found, using gradle directly"
-            gradle wrapper --gradle-version 8.5
-            chmod +x gradlew
-            ./gradlew assembleDebug
-          fi
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
