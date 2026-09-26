@@ -1,4 +1,4 @@
-name: Build Original - JVM 17 FORCED #15
+name: Build Original - Repair MainActivity #16
 on: workflow_dispatch
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
           gradle-version: "8.9"
           cache-disabled: true
 
-      - name: Restore Original + Force JVM 17
+      - name: Restore & Fix MainActivity
         run: |
           rm -rf project extracted || true
           unzip -o *.zip -d extracted
@@ -29,60 +29,113 @@ jobs:
           mkdir -p project
           cp -r $ANDROID_DIR/. project/
           echo "sdk.dir=$ANDROID_HOME" > project/local.properties
-
-          # Gradle properties clean
           cat > project/gradle.properties <<'EOF'
           org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
           android.useAndroidX=true
           android.enableJetifier=true
-          kotlin.jvm.toolchain=17
           EOF
-
           sed -i 's/\${allowCleartext}/true/g' project/app/src/main/AndroidManifest.xml || true
 
+          # FIX build.gradle.kts JVM
           python3 << 'PY'
-          import pathlib, re
-          path = pathlib.Path("project/app/build.gradle.kts")
-          text = path.read_text()
-
-          # 1. Remove old compileOptions and kotlinOptions completely to avoid duplicate
-          text = re.sub(r'compileOptions\s*\{[^}]*\}', '', text, flags=re.DOTALL)
-          text = re.sub(r'kotlinOptions\s*\{[^}]*\}', '', text, flags=re.DOTALL)
-
-          # 2. Replace any 1.8 / 11 references
-          text = text.replace("VERSION_1_8", "VERSION_17").replace("VERSION_11", "VERSION_17")
-          text = text.replace('"1.8"', '"17"').replace("'1.8'", "'17'")
-
-          # 3. Inject correct compileOptions + java toolchain right after android {
-          inject = """
+          import re, pathlib
+          p=pathlib.Path("project/app/build.gradle.kts").read_text()
+          p=re.sub(r'compileOptions\s*\{[^}]*\}', '', p, flags=re.DOTALL)
+          p=re.sub(r'kotlinOptions\s*\{[^}]*\}', '', p, flags=re.DOTALL)
+          p=p.replace("VERSION_1_8","VERSION_17").replace("VERSION_11","VERSION_17").replace('"1.8"','"17"')
+          inject="""
               compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
                   targetCompatibility = JavaVersion.VERSION_17
               }
-              java {
-                  toolchain {
-                      languageVersion.set(JavaLanguageVersion.of(17))
-                  }
-              }
-              kotlin {
-                  jvmToolchain(17)
-              }
+              kotlin { jvmToolchain(17) }
           """
-          text = text.replace("android {", "android {" + inject)
-
-          path.write_text(text)
-          print(text)
+          p=p.replace("android {","android {"+inject)
+          pathlib.Path("project/app/build.gradle.kts").write_text(p)
           PY
 
-      - name: Build APK
+          # --- ASAL FIX: MainActivity.kt ko sahi karna ---
+          cat > project/app/src/main/java/com/nexavideo/MainActivity.kt <<'KOT'
+          package com.nexavideo
+
+          import android.os.Bundle
+          import androidx.activity.ComponentActivity
+          import androidx.activity.compose.setContent
+          import androidx.activity.compose.rememberLauncherForActivityResult
+          import androidx.activity.result.PickVisualMediaRequest
+          import androidx.activity.result.contract.ActivityResultContracts
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.platform.LocalContext
+          import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.viewinterop.AndroidView
+          import androidx.media3.common.MediaItem
+          import androidx.media3.exoplayer.ExoPlayer
+          import androidx.media3.ui.PlayerView
+
+          class MainActivity : ComponentActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  setContent {
+                      MaterialTheme {
+                          var videoUrl by remember { mutableStateOf("https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4") }
+                          val context = LocalContext.current
+                          val player = remember {
+                              ExoPlayer.Builder(context).build().apply {
+                                  setMediaItem(MediaItem.fromUri(videoUrl))
+                                  prepare()
+                                  playWhenReady = true
+                              }
+                          }
+                          val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                              uri?.let {
+                                  videoUrl = it.toString()
+                                  player.setMediaItem(MediaItem.fromUri(it))
+                                  player.prepare()
+                                  player.play()
+                              }
+                          }
+                          DisposableEffect(Unit) { onDispose { player.release() } }
+
+                          Column(Modifier.fillMaxSize().padding(16.dp)) {
+                              Text("NexaVideo - Original Fixed", style = MaterialTheme.typography.headlineSmall)
+                              Spacer(Modifier.height(12.dp))
+                              AndroidView(factory = { PlayerView(it).apply { this.player = player } }, modifier = Modifier.fillMaxWidth().height(240.dp))
+                              Spacer(Modifier.height(12.dp))
+                              Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                  Button(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) }, modifier = Modifier.weight(1f)) {
+                                      Text("Pick Video")
+                                  }
+                                  Button(onClick = {
+                                      player.setMediaItem(MediaItem.fromUri(videoUrl))
+                                      player.prepare(); player.play()
+                                  }, modifier = Modifier.weight(1f)) {
+                                      Text("Play")
+                                  }
+                              }
+                              Spacer(Modifier.height(8.dp))
+                              OutlinedTextField(value = videoUrl, onValueChange = { videoUrl = it }, label = { Text("Video URL") }, modifier = Modifier.fillMaxWidth())
+                          }
+                      }
+                  }
+              }
+          }
+          KOT
+
+          echo "MainActivity FIXED - New file:"
+          cat project/app/src/main/java/com/nexavideo/MainActivity.kt
+
+      - name: Build
         run: |
           cd project
           if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.9; fi
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: Upload
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexaVideo-ORIGINAL-FIXED-15
+          name: NexaVideo-FINAL-APK
           path: project/app/build/outputs/apk/debug/*.apk
