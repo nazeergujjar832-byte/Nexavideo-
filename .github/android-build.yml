@@ -9,6 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: src/NexaVideo_Complete_Project/android
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,14 +23,16 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Make Gradle executable
-        run: chmod +x gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: nexavideo-debug-apk
-          path: "**/build/outputs/apk/**/*.apk"
+          path: src/NexaVideo_Complete_Project/android/app/build/outputs/apk/**/*.apk
