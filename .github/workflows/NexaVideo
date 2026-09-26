@@ -1,0 +1,22 @@
+NexaVideo - Original Short-Video Social Platform
+
+NexaVideo is an Android-first short video platform where users watch, upload, and share short videos.
+
+Features:
+• Home Feed - Trending videos with backend API
+• Shorts - Vertical swipe with AI captions
+• Create & Upload - Pick video, add caption, upload
+• Likes, Comments, Follow, Save
+• Inbox / Messaging - Chat with creators
+• Notifications - FCM powered
+• Profile - Creator data model
+• Creator Earnings - Ledger & Payout system
+• Search - Find videos & users
+• Admin Reports & Moderation
+
+Built with:
+Android Jetpack Compose, ExoPlayer, Retrofit, DataStore, Docker + PostgreSQL, GitHub Actions CI
+
+This is the official PRO FINAL build for production.
+
+Company Demo & Development Documentation - Integrated Android, Backend, Database, Docker, CI/APK
