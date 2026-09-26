@@ -16,24 +16,35 @@ jobs:
         run: |
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "platform-tools" "platforms;android-35" "platforms;android-34" "build-tools;35.0.0" "build-tools;34.0.0"
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: "8.9"
-      - name: Unzip - FIXED PATH
+      - name: Unzip and Fix Missing Files
         run: |
           rm -rf project extracted || true
           unzip -o *.zip -d extracted
           ANDROID_DIR=$(find extracted -name "settings.gradle.kts" | head -n 1 | xargs dirname)
-          echo "FOUND CORRECT ROOT: $ANDROID_DIR"
+          echo "ROOT: $ANDROID_DIR"
           mkdir -p project
           cp -r $ANDROID_DIR/. project/
+          # --- YE MISSING FILES ADD KAR RAHA HOON ---
+          echo "Adding missing gradle.properties..."
+          cat > project/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.enableJetifier=true
+          android.nonTransitiveRClass=true
+          kotlin.code.style=official
+          EOF
+          cat project/gradle.properties
+          ls -la project/
       - name: Build APK
         run: |
           cd project
           if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.9; fi
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
