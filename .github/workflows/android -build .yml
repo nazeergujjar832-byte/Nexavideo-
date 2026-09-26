@@ -4,43 +4,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Licenses
-        run: yes | sdkmanager --licenses || true
-
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
       - name: Unzip and Find Project
         run: |
           rm -rf project extracted || true
           ZIP=$(ls *.zip | head -n 1)
-          echo "Found ZIP: $ZIP"
           unzip -o "$ZIP" -d extracted
           ANDROID_DIR=$(find extracted -type f -name "gradlew" | head -n 1 | xargs dirname)
-          if [ -z "$ANDROID_DIR" ]; then
-            ANDROID_DIR=$(find extracted -type d -name android | head -n 1)
-          fi
-          echo "ANDROID_DIR=$ANDROID_DIR"
           mkdir -p project
           cp -r $ANDROID_DIR/* project/
-          cp -r $ANDROID_DIR/.* project/ 2>/dev/null || true
-          ls -la project/
-
       - name: Build APK
         run: |
           cd project
           chmod +x gradlew
           ./gradlew assembleDebug
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
