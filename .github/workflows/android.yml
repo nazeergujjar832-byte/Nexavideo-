@@ -19,11 +19,29 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Find and Prepare Project
+        run: |
+          ls -la
+          for f in *.zip; do
+            if [ -f "$f" ]; then
+              unzip -o "$f"
+            fi
+          done
+          ls -la
+          GRADLEW_PATH=$(find . -name "gradlew" -type f | head -n 1)
+          echo "Found gradlew at: $GRADLEW_PATH"
+          if [ -z "$GRADLEW_PATH" ]; then
+            exit 1
+          fi
+          echo "PROJECT_DIR=$(dirname $GRADLEW_PATH)" >> $GITHUB_ENV
+
       - name: Make Gradle executable
-        run: chmod +x gradlew
+        run: chmod +x $PROJECT_DIR/gradlew
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: |
+          cd $PROJECT_DIR
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
