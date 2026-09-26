@@ -19,7 +19,7 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
       - uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: "8.5"
+          gradle-version: "8.9"
       - name: Unzip - FIXED PATH
         run: |
           rm -rf project extracted || true
@@ -28,11 +28,10 @@ jobs:
           echo "FOUND CORRECT ROOT: $ANDROID_DIR"
           mkdir -p project
           cp -r $ANDROID_DIR/. project/
-          ls project/
       - name: Build APK
         run: |
           cd project
-          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.5; fi
+          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.9; fi
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
       - name: Upload APK
