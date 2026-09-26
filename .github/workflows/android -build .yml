@@ -8,48 +8,33 @@ jobs:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Setup Android SDK
         run: |
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: "8.5"
-
-      - name: Unzip and Fix Missing Files
+      - name: Unzip - FIXED PATH
         run: |
           rm -rf project extracted || true
-          ZIP=$(ls *.zip | head -n 1)
-          unzip -o "$ZIP" -d extracted
-          ANDROID_DIR=$(find extracted -type f -name "build.gradle*" | grep -v buildSrc | head -n 1 | xargs dirname)
-          echo "Found project at: $ANDROID_DIR"
+          unzip -o *.zip -d extracted
+          ANDROID_DIR=$(find extracted -name "settings.gradle.kts" | head -n 1 | xargs dirname)
+          echo "FOUND CORRECT ROOT: $ANDROID_DIR"
           mkdir -p project
-          cp -r $ANDROID_DIR/* project/
-          cp -r $ANDROID_DIR/.* project/ 2>/dev/null || true
-          
-          # --- MISSING ADD KAR RAHA HOON ---
-          cd project
-          # Agar gradlew missing hai to bana do
-          if [ ! -f "gradlew" ]; then
-            echo "gradlew missing hai, ab bana raha hoon..."
-            gradle wrapper --gradle-version 8.5
-          fi
-          chmod +x gradlew
-          ls -la
-
+          cp -r $ANDROID_DIR/. project/
+          ls project/
       - name: Build APK
         run: |
           cd project
+          if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.5; fi
+          chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
