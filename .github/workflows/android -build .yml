@@ -1,4 +1,4 @@
-name: Build Original NexaVideo - FIXED JVM
+name: Build Original - JVM 17 FORCED #15
 on: workflow_dispatch
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
           gradle-version: "8.9"
           cache-disabled: true
 
-      - name: Restore & FORCE JVM 17
+      - name: Restore Original + Force JVM 17
         run: |
           rm -rf project extracted || true
           unzip -o *.zip -d extracted
@@ -29,40 +29,60 @@ jobs:
           mkdir -p project
           cp -r $ANDROID_DIR/. project/
           echo "sdk.dir=$ANDROID_HOME" > project/local.properties
-          echo "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8" > project/gradle.properties
-          echo "android.useAndroidX=true" >> project/gradle.properties
-          echo "android.enableJetifier=true" >> project/gradle.properties
+
+          # Gradle properties clean
+          cat > project/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.enableJetifier=true
+          kotlin.jvm.toolchain=17
+          EOF
+
           sed -i 's/\${allowCleartext}/true/g' project/app/src/main/AndroidManifest.xml || true
 
-          # --- YAHAN ASAL FIX HAI ---
           python3 << 'PY'
-          import pathlib
-          p = pathlib.Path("project/app/build.gradle.kts").read_text()
-          # Sab jagah 1.8 aur 11 ko 17 karo
-          p = p.replace("VERSION_1_8", "VERSION_17")
-          p = p.replace("VERSION_11", "VERSION_17")
-          p = p.replace('jvmTarget = "1.8"', 'jvmTarget = "17"')
-          p = p.replace('jvmTarget = "11"', 'jvmTarget = "17"')
-          p = p.replace('"1.8"', '"17"')
-          p = p.replace("'1.8'", "'17'")
-          # Agar compileOptions missing ho to add kar do
-          if "sourceCompatibility" not in p:
-              p = p.replace("compileSdk", "compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n    compileSdk")
-          print(p)
-          pathlib.Path("project/app/build.gradle.kts").write_text(p)
+          import pathlib, re
+          path = pathlib.Path("project/app/build.gradle.kts")
+          text = path.read_text()
+
+          # 1. Remove old compileOptions and kotlinOptions completely to avoid duplicate
+          text = re.sub(r'compileOptions\s*\{[^}]*\}', '', text, flags=re.DOTALL)
+          text = re.sub(r'kotlinOptions\s*\{[^}]*\}', '', text, flags=re.DOTALL)
+
+          # 2. Replace any 1.8 / 11 references
+          text = text.replace("VERSION_1_8", "VERSION_17").replace("VERSION_11", "VERSION_17")
+          text = text.replace('"1.8"', '"17"').replace("'1.8'", "'17'")
+
+          # 3. Inject correct compileOptions + java toolchain right after android {
+          inject = """
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              java {
+                  toolchain {
+                      languageVersion.set(JavaLanguageVersion.of(17))
+                  }
+              }
+              kotlin {
+                  jvmToolchain(17)
+              }
+          """
+          text = text.replace("android {", "android {" + inject)
+
+          path.write_text(text)
+          print(text)
           PY
 
-          cat project/app/build.gradle.kts
-
-      - name: Build
+      - name: Build APK
         run: |
           cd project
           if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.9; fi
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --info
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NexaVideo-ORIGINAL-FIXED
+          name: NexaVideo-ORIGINAL-FIXED-15
           path: project/app/build/outputs/apk/debug/*.apk
