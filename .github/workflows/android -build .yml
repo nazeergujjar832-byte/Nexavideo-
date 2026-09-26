@@ -1,4 +1,4 @@
-name: Build Original NexaVideo
+name: Build Original NexaVideo - FIXED JVM
 on: workflow_dispatch
 jobs:
   build:
@@ -20,7 +20,8 @@ jobs:
         with:
           gradle-version: "8.9"
           cache-disabled: true
-      - name: Restore Original
+
+      - name: Restore & FORCE JVM 17
         run: |
           rm -rf project extracted || true
           unzip -o *.zip -d extracted
@@ -32,16 +33,36 @@ jobs:
           echo "android.useAndroidX=true" >> project/gradle.properties
           echo "android.enableJetifier=true" >> project/gradle.properties
           sed -i 's/\${allowCleartext}/true/g' project/app/src/main/AndroidManifest.xml || true
-          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' project/app/build.gradle.kts || true
-          sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' project/app/build.gradle.kts || true
-      - name: Build Original APK
+
+          # --- YAHAN ASAL FIX HAI ---
+          python3 << 'PY'
+          import pathlib
+          p = pathlib.Path("project/app/build.gradle.kts").read_text()
+          # Sab jagah 1.8 aur 11 ko 17 karo
+          p = p.replace("VERSION_1_8", "VERSION_17")
+          p = p.replace("VERSION_11", "VERSION_17")
+          p = p.replace('jvmTarget = "1.8"', 'jvmTarget = "17"')
+          p = p.replace('jvmTarget = "11"', 'jvmTarget = "17"')
+          p = p.replace('"1.8"', '"17"')
+          p = p.replace("'1.8'", "'17'")
+          # Agar compileOptions missing ho to add kar do
+          if "sourceCompatibility" not in p:
+              p = p.replace("compileSdk", "compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n    compileSdk")
+          print(p)
+          pathlib.Path("project/app/build.gradle.kts").write_text(p)
+          PY
+
+          cat project/app/build.gradle.kts
+
+      - name: Build
         run: |
           cd project
           if [ ! -f gradlew ]; then gradle wrapper --gradle-version 8.9; fi
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --info
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NexaVideo-ORIGINAL-APK
+          name: NexaVideo-ORIGINAL-FIXED
           path: project/app/build/outputs/apk/debug/*.apk
