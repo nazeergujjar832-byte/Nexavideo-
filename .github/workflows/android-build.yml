@@ -1,35 +1,25 @@
 name: Build NexaVideo APK
 on:
   workflow_dispatch:
-  push:
-    branches: ["main"]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-      - name: Unzip Project
-        run: |
-          rm -rf project extracted || true
-          unzip -o "NexaVideo_Super_App_28_Modules.zip" -d extracted
-          ls -la extracted
-          GRADLEW_PATH=$(find extracted -name "gradlew" -type f | head -n 1)
-          echo "Found at: $GRADLEW_PATH"
-          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
-          echo "Project is: $PROJECT_DIR"
-      - name: Make executable
-        run: chmod +x $PROJECT_DIR/gradlew
       - name: Build APK
-        run: cd $PROJECT_DIR && ./gradlew assembleDebug
+        run: |
+          unzip -o "NexaVideo_Super_App_28_Modules.zip"
+          FILE=$(find . -name gradlew -type f | head -n 1)
+          echo "Found: $FILE"
+          DIR=$(dirname "$FILE")
+          chmod +x "$DIR/gradlew"
+          cd "$DIR" && ./gradlew assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: NexaVideo-APK
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          path: "**/app/build/outputs/apk/debug/*.apk"
