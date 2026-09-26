@@ -19,21 +19,23 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Find and Prepare Project
+      - name: Unzip and Prepare Project
         run: |
           ls -la
-          for f in *.zip; do
-            if [ -f "$f" ]; then
-              unzip -o "$f"
-            fi
-          done
+          echo "Unzipping project..."
+          unzip -o "NexaVideo_Super_App_28_Modules.zip"
+          echo "--- After unzip ---"
           ls -la
+          # gradlew dhoondo, kitna bhi deep ho
           GRADLEW_PATH=$(find . -name "gradlew" -type f | head -n 1)
           echo "Found gradlew at: $GRADLEW_PATH"
           if [ -z "$GRADLEW_PATH" ]; then
+            echo "gradlew still not found, listing all files:"
+            find . -type f | head -n 100
             exit 1
           fi
           echo "PROJECT_DIR=$(dirname $GRADLEW_PATH)" >> $GITHUB_ENV
+          echo "Project dir is: $(dirname $GRADLEW_PATH)"
 
       - name: Make Gradle executable
         run: chmod +x $PROJECT_DIR/gradlew
