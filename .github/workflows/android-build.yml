@@ -19,14 +19,30 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Make Gradle executable
-        run: chmod +x gradlew
+      - name: Prepare Project
+        run: |
+          unzip -q NexaVideo_Super_App_28_Modules.zip -d project
+          echo "Project extracted"
+          find project -name gradlew -type f -print
+
+      - name: Find Gradle Project
+        run: |
+          GRADLEW=$(find project -name gradlew -type f | head -n 1)
+          if [ -z "$GRADLEW" ]; then
+            echo "ERROR: gradlew was not found inside the project ZIP."
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$GRADLEW")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          chmod +x "$GRADLEW"
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: |
+          cd "$PROJECT_DIR"
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: nexavideo-debug-apk
-          path: "**/build/outputs/apk/**/*.apk"
+          path: "project/**/build/outputs/apk/**/*.apk"
