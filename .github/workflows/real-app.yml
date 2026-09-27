@@ -1,4 +1,4 @@
-name: NexaVideo Build
+name: NexaVideo TikTok Build
 on: [push, workflow_dispatch]
 jobs:
   build:
@@ -9,7 +9,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Build APK and AAB
+      - name: Build Full TikTok App
         run: |
           export ANDROID_HOME=/usr/local/lib/android/sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
@@ -17,10 +17,10 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           rm -rf NexaApp
           mkdir -p NexaApp/app/src/main/java/com/nexavideo
+          mkdir -p NexaApp/app/src/main/res/layout
           cat > NexaApp/gradle.properties <<'PROP'
           android.useAndroidX=true
-          android.nonTransitiveRClass=true
-          org.gradle.jvmargs=-Xmx2g
+          org.gradle.jvmargs=-Xmx3g
           PROP
           cat > NexaApp/settings.gradle <<'SET'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
@@ -33,36 +33,82 @@ jobs:
           TOP
           cat > NexaApp/app/build.gradle <<'APP'
           plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
-          android { namespace 'com.nexavideo'; compileSdk 34; defaultConfig { applicationId "com.nexavideo"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" }; compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 } }
-          dependencies { implementation 'androidx.core:core-ktx:1.12.0'; implementation 'androidx.appcompat:appcompat:1.6.1' }
+          android {
+            namespace 'com.nexavideo'; compileSdk 34
+            defaultConfig { applicationId "com.nexavideo"; minSdk 24; targetSdk 34; versionCode 2; versionName "2.0-TikTok" }
+            compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+          }
+          dependencies {
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'com.google.android.material:material:1.11.0'
+            implementation 'androidx.viewpager2:viewpager2:1.0.0'
+            implementation 'androidx.recyclerview:recyclerview:1.3.2'
+          }
           APP
           cat > NexaApp/app/src/main/AndroidManifest.xml <<'MANI'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="NexaVideo" android:theme="@android:style/Theme.Light"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+          <application android:label="NexaVideo" android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+          <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+          </application></manifest>
           MANI
+          cat > NexaApp/app/src/main/res/layout/activity_main.xml <<'LAY'
+          <?xml version="1.0" encoding="utf-8"?>
+          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+          <androidx.viewpager2.widget.ViewPager2 android:id="@+id/viewPager" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"/>
+          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="NexaVideo - Gujranwala" android:textColor="#FFFFFF" android:layout_gravity="top|center" android:padding="20dp"/>
+          </FrameLayout>
+          LAY
           cat > NexaApp/app/src/main/java/com/nexavideo/MainActivity.kt <<'KOT'
           package com.nexavideo
           import android.os.Bundle
           import androidx.appcompat.app.AppCompatActivity
-          import android.widget.TextView
+          import androidx.viewpager2.widget.ViewPager2
+          import androidx.recyclerview.widget.RecyclerView
+          import android.view.*
+          import android.widget.*
           class MainActivity : AppCompatActivity() {
             override fun onCreate(s: Bundle?) {
               super.onCreate(s)
-              val tv = TextView(this)
-              tv.text = "NexaVideo REAL APP v25\nCreate. Watch. Connect.\nPrivate API Ready\nNazeer Gujjar"
-              tv.textSize = 20f
-              tv.setPadding(40,250,40,40)
-              setContentView(tv)
+              setContentView(R.layout.activity_main)
+              val vp = findViewById<ViewPager2>(R.id.viewPager)
+              vp.adapter = VideoAdapter()
+            }
+            class VideoAdapter : RecyclerView.Adapter<VideoAdapter.VH>() {
+              val videos = listOf("Video 1 - Nazeer", "Video 2 - Gujranwala", "Video 3 - NexaVideo", "Video 4 - Private API Connected", "Video 5 - 100% Ready Soon")
+              class VH(v: View) : RecyclerView.ViewHolder(v) {
+                val text: TextView = v.findViewById(R.id.videoText)
+                val likeBtn: TextView = v.findViewById(R.id.likeBtn)
+              }
+              override fun onCreateViewHolder(p: ViewGroup, t: Int): VH {
+                val v = LayoutInflater.from(p.context).inflate(R.layout.item_video, p, false)
+                return VH(v)
+              }
+              override fun onBindViewHolder(h: VH, pos: Int) {
+                h.text.text = videos[pos] + "\n\nPrivate Key: NEXA_PRIVATE_2026_ACTIVE\n\n❤️ Like | 💬 Comment | ↗️ Share"
+                h.likeBtn.setOnClickListener { Toast.makeText(h.itemView.context, "Liked! ❤️", Toast.LENGTH_SHORT).show() }
+              }
+              override fun getItemCount() = videos.size
             }
           }
           KOT
+          mkdir -p NexaApp/app/src/main/res/layout
+          cat > NexaApp/app/src/main/res/layout/item_video.xml <<'ITEM'
+          <?xml version="1.0" encoding="utf-8"?>
+          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000">
+          <TextView android:id="@+id/videoText" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:textColor="#FFFFFF" android:textSize="22sp" android:padding="30dp"/>
+          <TextView android:id="@+id/likeBtn" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right|center_vertical" android:text="❤️&#10;2.5K&#10;&#10;💬&#10;120&#10;&#10;↗️" android:textColor="#FFFFFF" android:textSize="20sp" android:padding="20dp"/>
+          <Button android:layout_width="60dp" android:layout_height="60dp" android:layout_gravity="bottom|center" android:text="+" android:textSize="30sp" android:layout_marginBottom="30dp"/>
+          </FrameLayout>
+          ITEM
           echo "sdk.dir=$ANDROID_HOME" > NexaApp/local.properties
           cd NexaApp
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
-          ./gradlew assembleDebug bundleRelease --no-daemon
+         ./gradlew assembleDebug bundleRelease --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: NexaVideo-Store-Files
+          name: NexaVideo-TikTok-Full
           path: |
             NexaApp/app/build/outputs/apk/debug/*.apk
             NexaApp/app/build/outputs/bundle/release/*.aab
