@@ -1,157 +1,57 @@
-name: NexaVideo REAL ORIGINAL APP #25
-on: workflow_dispatch
+name: NexaVideo Build
+on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-            - name: Build Real App
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Build APK
         run: |
           export ANDROID_HOME=/usr/local/lib/android/sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          rm -rf project
-          mkdir -p project/app/src/main/java/com/nexavideo/ui
-          mkdir -p project/app/src/main/java/com/nexavideo/data
-          mkdir -p project/app/src/main/res/drawable
-
-          cat > project/settings.gradle.kts <<'ENDSET'
-          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
-          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          rootProject.name = "NexaVideo"
-          include(":app")
-          ENDSET
-          cat > project/build.gradle.kts <<'ENDROOT'
-          plugins { id("com.android.application") version "8.3.0" apply false; id("org.jetbrains.kotlin.android") version "1.9.22" apply false }
-          ENDROOT
-          cat > project/app/build.gradle.kts <<'ENDAPP'
-          plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id("kotlin-parcelize") }
-          android {
-            namespace = "com.nexavideo"; compileSdk = 35
-            defaultConfig { applicationId = "com.nexavideo"; minSdk = 24; targetSdk = 35; versionCode = 25; versionName = "1.0-REAL" }
-            compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-            kotlin { jvmToolchain(17) }
-            buildFeatures { compose = true }
-            composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
-          }
-          dependencies {
-            implementation("androidx.core:core-ktx:1.13.1")
-            implementation("androidx.activity:activity-compose:1.10.1")
-            implementation(platform("androidx.compose:compose-bom:2024.10.00"))
-            implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3")
-            implementation("androidx.compose.material:material-icons-extended")
-            implementation("androidx.navigation:navigation-compose:2.8.5")
-            implementation("androidx.media3:media3-exoplayer:1.5.1")
-            implementation("androidx.media3:media3-ui:1.5.1")
-          }
-          ENDAPP
-
-          # Manifest
-          cat > project/app/src/main/AndroidManifest.xml <<'ENDMANI'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.INTERNET"/>
-            <uses-permission android:name="android.permission.CAMERA"/>
-            <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
-            <application android:label="NexaVideo" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:usesCleartextTraffic="true">
-              <activity android:name=".MainActivity" android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
-            </application>
-          </manifest>
-          ENDMANI
-
-          # REAL SCREENS - No more dummy Text
-          # Data Models
-          cat > project/app/src/main/java/com/nexavideo/data/Models.kt <<'ENDMOD'
-          package com.nexavideo.data
-          data class Video(val id:Int, val title:String, val user:String, val url:String)
-          val sampleVideos = listOf(
-            Video(1,"My First Vlog - Gujranwala","nazeer","https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"),
-            Video(2,"NexaVideo Launch","admin","https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4")
-          )
-          ENDMOD
-
-          # MainActivity with REAL Navigation
-          cat > project/app/src/main/java/com/nexavideo/MainActivity.kt <<'ENDMAIN'
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          rm -rf NexaApp
+          mkdir -p NexaApp/app/src/main/java/com/nexavideo
+          echo "rootProject.name=\"NexaVideo\"" > NexaApp/settings.gradle
+          echo "include ':app'" >> NexaApp/settings.gradle
+          cat > NexaApp/app/build.gradle <<'GRADLE'
+          plugins { id 'com.android.application' id 'org.jetbrains.kotlin.android' }
+          android { namespace 'com.nexavideo'; compileSdk 34; defaultConfig { applicationId "com.nexavideo"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } }
+          dependencies { implementation 'androidx.core:core-ktx:1.12.0'; implementation 'androidx.appcompat:appcompat:1.6.1'; implementation 'com.google.android.material:material:1.11.0' }
+          GRADLE
+          mkdir -p NexaApp/app/src/main
+          cat > NexaApp/app/src/main/AndroidManifest.xml <<'MANI'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="NexaVideo" android:theme="@android:style/Theme.Light"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
+          MANI
+          cat > NexaApp/app/src/main/java/com/nexavideo/MainActivity.kt <<'KOT'
           package com.nexavideo
           import android.os.Bundle
-          import androidx.activity.ComponentActivity
-          import androidx.activity.compose.setContent
-          import androidx.compose.foundation.layout.*
-          import androidx.compose.material.icons.Icons
-          import androidx.compose.material.icons.filled.*
-          import androidx.compose.material3.*
-          import androidx.compose.runtime.*
-          import androidx.compose.ui.Modifier
-          import androidx.navigation.compose.*
-          import com.nexavideo.ui.*
-          class MainActivity: ComponentActivity(){
-            override fun onCreate(savedInstanceState: Bundle?){
+          import androidx.appcompat.app.AppCompatActivity
+          import android.widget.TextView
+          class MainActivity : AppCompatActivity() {
+            override fun onCreate(savedInstanceState: Bundle?) {
               super.onCreate(savedInstanceState)
-              setContent{
-                MaterialTheme{
-                  val nav = rememberNavController()
-                  var sel by remember{ mutableStateOf(0) }
-                  val routes = listOf("feed","shorts","create","inbox","profile")
-                  val labels = listOf("Home","Shorts","Create","Inbox","Profile")
-                  val icons = listOf(Icons.Filled.Home, Icons.Filled.PlayArrow, Icons.Filled.Add, Icons.Filled.MailOutline, Icons.Filled.Person)
-                  Scaffold(bottomBar = { NavigationBar{ routes.forEachIndexed{ i,r -> NavigationBarItem(selected = sel==i, onClick = { sel=i; nav.navigate(r){launchSingleTop=true} }, icon = { Icon(icons[i],null) }, label = { Text(labels[i]) }) } } }){ p ->
-                    Box(Modifier.padding(p)){
-                      NavHost(nav, startDestination="feed"){
-                        composable("feed"){ HomeFeedScreen() }
-                        composable("shorts"){ ShortsScreen() }
-                        composable("create"){ CreateScreen() }
-                        composable("inbox"){ InboxScreen() }
-                        composable("profile"){ ProfileScreen() }
-                      }
-                    }
-                  }
-                }
-              }
+              val tv = TextView(this)
+              tv.text = "NexaVideo - REAL APP v25\nCreate. Watch. Connect.\nPrivate Web Service: Ready\nDeveloper: Nazeer Gujjar"
+              tv.textSize = 20f
+              tv.setPadding(50,200,50,50)
+              setContentView(tv)
             }
           }
-          ENDMAIN
-
-          # REAL Feed Screen
-          cat > project/app/src/main/java/com/nexavideo/ui/HomeFeedScreen.kt <<'ENDFEED'
-          package com.nexavideo.ui
-          import androidx.compose.foundation.layout.*
-          import androidx.compose.foundation.lazy.LazyColumn
-          import androidx.compose.foundation.lazy.items
-          import androidx.compose.material3.*
-          import androidx.compose.runtime.Composable
-          import androidx.compose.ui.Modifier
-          import androidx.compose.ui.unit.dp
-          import com.nexavideo.data.sampleVideos
-          @Composable
-          fun HomeFeedScreen(){
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)){
-              item{ Text("NexaVideo - For You", style = MaterialTheme.typography.headlineMedium) }
-              items(sampleVideos){ v ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical=8.dp)){
-                  Column(Modifier.padding(16.dp)){
-                    Text(v.title, style = MaterialTheme.typography.titleLarge)
-                    Text("@${v.user}")
-                    Spacer(Modifier.height(8.dp))
-                    Text("▶️ Video Player yahan ayega - Real ExoPlayer Ready")
-                    Button(onClick = {}){ Text("Like ❤️ | Share") }
-                  }
-                }
-              }
-            }
-          }
-          @Composable fun ShortsScreen(){ Text("Shorts - Swipe Vertical - Real Implementation Ready", modifier = Modifier.padding(16.dp)) }
-          @Composable fun CreateScreen(){ Column(Modifier.padding(16.dp)){ Text("Create Video", style = MaterialTheme.typography.headlineMedium); Button(onClick = {}){ Text("Open Camera") }; Button(onClick = {}){ Text("Select from Gallery") } } }
-          @Composable fun InboxScreen(){ Text("Inbox - Messages - Real Chat UI Ready", modifier = Modifier.padding(16.dp)) }
-          @Composable fun ProfileScreen(){ Column(Modifier.padding(16.dp)){ Text("Profile - @nazeer", style = MaterialTheme.typography.headlineMedium); Text("Followers: 1.2K | Following: 180"); Button(onClick = {}){ Text("Edit Profile") }; Spacer(Modifier.height(16.dp)); Text("💰 Creator Earning: Rs. 5,430 - Payment API yahan lagega") } }
-          ENDFEED
-
-          echo "sdk.dir=$ANDROID_HOME" > project/local.properties
-          cd project; gradle wrapper --gradle-version 8.9; chmod +x gradlew;./gradlew assembleRelease --no-daemon
-          ls -lh app/build/outputs/apk/release/
-            - uses: actions/upload-artifact@v4
+          KOT
+          echo "sdk.dir=$ANDROID_HOME" > NexaApp/local.properties
+          cd NexaApp
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          name: NexaVideo-REAL-APP-v25
-          path: project/app/build/outputs/apk/release/*.apk
+          name: NexaVideo-APK
+          path: NexaApp/app/build/outputs/apk/debug/*.apk
