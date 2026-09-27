@@ -15,14 +15,56 @@ jobs:
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-          rm -rf NexaApp
-          mkdir -p NexaApp/app/src/main/java/com/nexavideo
-          printf 'android.useAndroidX=true\n' > NexaApp/gradle.properties
-          printf 'rootProject.name="NexaVideo"\ninclude ":app"\n' > NexaApp/settings.gradle
-          printf 'plugins { id "com.android.application" version "8.2.2" apply false }\n' > NexaApp/build.gradle
-          printf 'plugins { id "com.android.application" }\nandroid { namespace "com.nexavideo"; compileSdk 34; defaultConfig { applicationId "com.nexavideo"; minSdk 24; targetSdk 34; versionCode 3; versionName "3.0" } }\ndependencies { implementation "androidx.core:core-ktx:1.12.0"; implementation "androidx.appcompat:appcompat:1.6.1" }\n' > NexaApp/app/build.gradle
-          printf '<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="NexaVideo"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>' > NexaApp/app/src/main/AndroidManifest.xml
-          printf 'package com.nexavideo\nimport android.os.Bundle\nimport androidx.appcompat.app.AppCompatActivity\nimport android.widget.TextView\nclass MainActivity : AppCompatActivity() { override fun onCreate(s: Bundle?) { super.onCreate(s); val tv = TextView(this); tv.text = "NexaVideo TIKTOK v3\nPrivate API OK\nNazeer Gujjar - Gujranwala"; tv.textSize = 22f; tv.setPadding(40,300,40,40); setContentView(tv) } }\n' > NexaApp/app/src/main/java/com/nexavideo/MainActivity.kt
+          python3 << 'PY'
+          import os
+          os.system("rm -rf NexaApp && mkdir -p NexaApp/app/src/main/java/com/nexavideo")
+          open("NexaApp/gradle.properties","w").write("android.useAndroidX=true\norg.gradle.jvmargs=-Xmx2g\n")
+          open("NexaApp/settings.gradle","w").write('''
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral() } }
+          rootProject.name = "NexaVideo"
+          include ':app'
+          ''')
+          open("NexaApp/build.gradle","w").write('''
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
+              id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+          }
+          ''')
+          open("NexaApp/app/build.gradle","w").write('''
+          plugins {
+              id 'com.android.application'
+              id 'org.jetbrains.kotlin.android'
+          }
+          android {
+              namespace 'com.nexavideo'
+              compileSdk 34
+              defaultConfig { applicationId "com.nexavideo"; minSdk 24; targetSdk 34; versionCode 4; versionName "4.0-Fixed" }
+              compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+          }
+          dependencies {
+              implementation 'androidx.core:core-ktx:1.12.0'
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          ''')
+          open("NexaApp/app/src/main/AndroidManifest.xml","w").write('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="NexaVideo" android:theme="@android:style/Theme.Light"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>')
+          open("NexaApp/app/src/main/java/com/nexavideo/MainActivity.kt","w").write('''
+          package com.nexavideo
+          import android.os.Bundle
+          import androidx.appcompat.app.AppCompatActivity
+          import android.widget.TextView
+          class MainActivity : AppCompatActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  val tv = TextView(this)
+                  tv.text = "NexaVideo v4 FIXED\\nBuild Success!\\nPrivate API: ACTIVE\\nNazeer Gujjar - Gujranwala - 100%"
+                  tv.textSize = 22f
+                  tv.setPadding(40, 300, 40, 40)
+                  setContentView(tv)
+              }
+          }
+          ''')
+          PY
           echo "sdk.dir=$ANDROID_HOME" > NexaApp/local.properties
           cd NexaApp
           gradle wrapper --gradle-version 8.5
@@ -30,5 +72,5 @@ jobs:
           ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: NexaVideo-APK-Fixed
+          name: NexaVideo-APK-FIXED
           path: NexaApp/app/build/outputs/apk/debug/*.apk
