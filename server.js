@@ -13,34 +13,50 @@ app.get('/', (req, res) => {
 app.get('/info', async (req, res) => {
   try {
     const url = req.query.url;
-    if (!url) return res.json({ error: 'URL do?url=...' });
+    if (!url) return res.json({ error: 'url parameter missing' });
 
-    const info = await ytdl.getInfo(url);
+    // ANDROID client se YouTube block bypass hota hai
+    const info = await ytdl.getInfo(url, {
+      playerClients: ['ANDROID', 'IOS', 'WEB']
+    });
+
+    const formats = info.formats
+      .filter(f => f.hasVideo && f.hasAudio)
+      .map(f => ({
+        quality: f.qualityLabel,
+        itag: f.itag,
+        url: f.url
+      }));
+
     res.json({
       title: info.videoDetails.title,
-      thumbnail: info.videoDetails.thumbnails[0].url,
-      formats: info.formats.map(f => ({
-        quality: f.qualityLabel,
-        url: f.url
-      })).slice(0,5)
+      thumbnail: info.videoDetails.thumbnails.pop().url,
+      duration: info.videoDetails.lengthSeconds,
+      formats: formats
     });
+
   } catch (e) {
-    res.json({ error: e.message });
+    console.log(e);
+    res.json({ error: e.message + " | Try another video" });
   }
 });
 
 app.get('/download', async (req, res) => {
   try {
     const url = req.query.url;
-    if (!ytdl.validateURL(url)) return res.status(400).send('Invalid URL');
+    if (!url) return res.status(400).send('URL missing');
 
-    const info = await ytdl.getInfo(url);
-    const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, '_');
+    const info = await ytdl.getInfo(url, { playerClients: ['ANDROID'] });
+    const title = info.videoDetails.title.replace(/[^\w\s]/gi, '');
 
     res.header('Content-Disposition', `attachment; filename="${title}.mp4"`);
-    ytdl(url, { quality: 'highest' }).pipe(res);
+    ytdl(url, { 
+      quality: 'highest',
+      playerClients: ['ANDROID']
+    }).pipe(res);
+
   } catch (e) {
-    res.status(500).send(e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
