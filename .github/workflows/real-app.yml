@@ -9,7 +9,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Build Real APK
+      - name: Build APK and AAB
         run: |
           export ANDROID_HOME=/usr/local/lib/android/sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
@@ -48,7 +48,7 @@ jobs:
             override fun onCreate(s: Bundle?) {
               super.onCreate(s)
               val tv = TextView(this)
-              tv.text = "NexaVideo REAL APP v25\n\nCreate. Watch. Connect.\nPrivate API Ready\nNazeer Gujjar - Gujranwala"
+              tv.text = "NexaVideo REAL APP v25\nCreate. Watch. Connect.\nPrivate API Ready\nNazeer Gujjar"
               tv.textSize = 20f
               tv.setPadding(40,250,40,40)
               setContentView(tv)
@@ -59,8 +59,10 @@ jobs:
           cd NexaApp
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug bundleRelease --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: NexaVideo-APK
-          path: NexaApp/app/build/outputs/apk/debug/*.apk
+          name: NexaVideo-Store-Files
+          path: |
+            NexaApp/app/build/outputs/apk/debug/*.apk
+            NexaApp/app/build/outputs/bundle/release/*.aab
