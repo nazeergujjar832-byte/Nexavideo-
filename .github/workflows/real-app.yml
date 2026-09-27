@@ -17,6 +17,11 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           rm -rf NexaApp
           mkdir -p NexaApp/app/src/main/java/com/nexavideo
+          cat > NexaApp/gradle.properties <<'PROP'
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          org.gradle.jvmargs=-Xmx2g
+          PROP
           cat > NexaApp/settings.gradle <<'SET'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral() } }
@@ -43,8 +48,8 @@ jobs:
             override fun onCreate(s: Bundle?) {
               super.onCreate(s)
               val tv = TextView(this)
-              tv.text = "NexaVideo REAL APP v25\n\nCreate. Watch. Connect.\n\nPrivate API: NEXA_PRIVATE_2026_GUJRANWALA_832\nStatus: Ready\nDev: Nazeer Gujjar"
-              tv.textSize = 19f
+              tv.text = "NexaVideo REAL APP v25\n\nCreate. Watch. Connect.\nPrivate API Ready\nNazeer Gujjar - Gujranwala"
+              tv.textSize = 20f
               tv.setPadding(40,250,40,40)
               setContentView(tv)
             }
@@ -54,7 +59,7 @@ jobs:
           cd NexaApp
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --offline || ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: NexaVideo-APK
