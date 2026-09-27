@@ -2,72 +2,44 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 app.use(cors());
-app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('NexaVideo API READY - Made by Nazeer Gujjar');
-});
+app.get('/', (req,res) => res.send('NexaVideo API LIVE - Nazeer Gujjar'));
 
-function getVideoId(url) {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
-    if (u.searchParams.get('v')) return u.searchParams.get('v');
-    const parts = u.pathname.split('/');
-    return parts.pop();
-  } catch { return null; }
-}
-
-const PIPED_INSTANCES = [
-  'https://pipedapi.kavin.rocks',
-  'https://api.piped.privacy.com.de',
-  'https://pipedapi.adminforge.de'
-];
-
-app.get('/info', async (req, res) => {
+// Invidious API - Ye Vercel pe block hai, Render pe 100% chalta hai
+app.get('/info', async (req,res) => {
   const url = req.query.url;
-  if (!url) return res.json({ error: 'url missing?url=' });
+  if(!url) return res.json({error:'url missing'});
 
-  const videoId = getVideoId(url);
-  if (!videoId) return res.json({ error: 'Invalid YouTube URL' });
-
-  for (const instance of PIPED_INSTANCES) {
-    try {
-      const r = await fetch(`${instance}/streams/${videoId}`);
-      const data = await r.json();
-      if (data.title) {
-        return res.json({
-          title: data.title,
-          thumbnail: data.thumbnailUrl,
-          duration: data.duration,
-          uploader: data.uploader,
-          videoStreams: data.videoStreams?.slice(0,5),
-          audioStreams: data.audioStreams?.slice(0,3),
-          // direct download links
-          bestUrl: data.videoStreams?.[0]?.url,
-          downloadLinks: data.videoStreams
-        });
-      }
-    } catch (e) {}
-  }
-  res.json({ error: 'All Piped instances failed, try again' });
-});
-
-app.get('/download', async (req, res) => {
-  const url = req.query.url;
-  const videoId = getVideoId(url);
-  if (!videoId) return res.status(400).send('Invalid URL');
+  const id = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+  if(!id) return res.json({error:'Invalid URL'});
 
   try {
-    const r = await fetch(`https://pipedapi.kavin.rocks/streams/${videoId}`);
+    // Invidious instance
+    const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
     const data = await r.json();
-    if(data.videoStreams && data.videoStreams[0]) {
-      return res.redirect(data.videoStreams[0].url);
-    }
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+
+    res.json({
+      title: data.title,
+      thumbnail: data.videoThumbnails?.[0]?.url,
+      duration: data.lengthSeconds,
+      formats: data.formatStreams, // direct download links!
+      best: data.formatStreams?.[0]?.url
+    });
+  } catch(e) {
+    res.json({error: e.message});
   }
 });
 
-module.exports = app;
+app.get('/download', async (req,res) => {
+  const url = req.query.url;
+  const id = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+  try {
+    const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
+    const data = await r.json();
+    if(data.formatStreams?.[0]?.url) return res.redirect(data.formatStreams[0].url);
+    res.json(data);
+  } catch(e) { res.json({error:e.message}); }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Running on', PORT));
