@@ -1,0 +1,15 @@
+DATABASE_URL=postgres://nexa:nexa123@postgres:5432/nexavideo
+JWT_SECRET=NexaVideoFinalSecret2026_Gujranwala_100Percent
+AWS_ACCESS_KEY_ID=AKIA_YOUR_AWS_KEY_HERE
+AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_HERE
+AWS_BUCKET=nexavideo-prod
+AWS_REGION=us-east-1
+CDN_URL=https://cdn.nexavideo.com
+FCM_PROJECT_ID=nexavideo-final
+FCM_PRIVATE_KEY=-----BEGIN PRIVATE KEY----- YOUR_FIREBASE_KEY -----
+FCM_CLIENT_EMAIL=firebase-adminsdk@nexavideo-final.iam.gserviceaccount.com
+STRIPE_SECRET_KEY=sk_test_YOUR_STRIPE_KEY_HERE
+SMTP_EMAIL=nazeer@nexavideo.com
+SMTP_PASS=YOUR_SMTP_PASS
+PORT=3000
+NODE_ENV=production
