@@ -1,48 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="ur">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXAVIDEO</title>
+<title>NEXAVIDEO - Original System</title>
 <style>
-body{background:#000;color:#fff;text-align:center;font-family:Arial;padding:20px}
-h1{font-size:48px;font-weight:900} h1 span{color:red}
-p{color:#888}
-.box{background:#111;border:1px solid #333;border-radius:20px;padding:15px;display:flex;max-width:500px;margin:30px auto}
-input{flex:1;background:#000;border:1px solid #444;color:#fff;padding:15px;border-radius:12px}
-button{background:red;border:none;color:#fff;padding:15px 25px;border-radius:12px;margin-left:10px;font-size:20px;cursor:pointer}
-.card{background:#111;border:1px solid #333;padding:15px;border-radius:15px;max-width:500px;margin:20px auto}
-.card a{display:block;background:red;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}
-.card img{width:100%;border-radius:10px}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+body{background:#000;color:#fff;height:100vh;overflow:hidden}
+.header{position:fixed;top:0;left:0;right:0;z-index:10;background:rgba(0,0,0,0.8);padding:12px;text-align:center;border-bottom:1px solid #222}
+.header h1{font-weight:900;font-size:22px} .header h1 span{color:#fe2c55}
+.feed{height:100vh;width:100%;max-width:420px;margin:0 auto;overflow-y:scroll;scroll-snap-type:y mandatory}
+.feed::-webkit-scrollbar{display:none}
+.card{height:100vh;scroll-snap-align:start;position:relative;background:#000;display:flex;align-items:center;justify-content:center}
+.card video{width:100%;height:100%;object-fit:cover}
+.bottom{position:absolute;bottom:25px;left:12px;right:75px}
+.bottom b{font-size:16px} .bottom p{font-size:13px;opacity:0.9;margin-top:4px}
+.right{position:absolute;right:10px;bottom:90px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.btn{width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;backdrop-filter:blur(5px)}
+.likes{font-size:11px;margin-top:4px;font-weight:700}
+#login{position:fixed;inset:0;background:#000;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:#111;border:1px solid #222;padding:25px;border-radius:20px;width:100%;max-width:340px;text-align:center}
+.login-box input{width:100%;padding:14px;background:#000;border:1px solid #333;border-radius:12px;color:#fff;margin-top:12px}
+.login-box button{width:100%;padding:14px;background:#fe2c55;border:none;border-radius:12px;color:#fff;font-weight:800;margin-top:15px}
 </style>
 </head>
 <body>
-<h1><span>NEXA</span>VIDEO</h1>
-<p>YouTube, TikTok, Facebook, Insta - All in One Downloader</p>
-
-<div class="box">
-<input id="link" placeholder="Paste video link here..">
-<button onclick="go()">⬇</button>
-</div>
-
-<div id="result"></div>
-
-<script>
-async function go(){
-let u=document.getElementById('link').value;
-let r=document.getElementById('result');
-if(!u){alert('Pehle link dalo');return}
-r.innerHTML='Loading...';
-try{
-let res=await fetch('/api?url='+encodeURIComponent(u));
-let d=await res.json();
-if(d.error){r.innerHTML='<div class=card>Error: '+d.error+'</div>';return}
-r.innerHTML='<div class=card><img src="'+d.thumbnail+'"><p>'+d.title+'</p><a href="'+d.url+'" target=_blank>Download Now</a></div>';
-}catch(e){
-r.innerHTML='<div class=card>Error: '+e.message+'</div>';
-}
-}
-</script>
-</body>
-  </html>
-  
+<div id="login">
+<div class="login-box">
+<h
