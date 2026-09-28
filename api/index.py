@@ -14,22 +14,30 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(b'{"error":"URL missing"}')
                 return
 
-            # FIX: format nahi likhna, yt-dlp khud best le lega
             opts = {
                 'quiet': True,
                 'no_warnings': True,
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'ios', 'web']
+                    }
+                },
+                'extractor_retries': 3,
+                'noplaylist': True
             }
 
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-
-                # direct best url
                 video_url = info.get('url')
-                # agar url na mile to formats me se best lo
                 if not video_url:
                     fmts = info.get('formats', [])
-                    if fmts:
-                        video_url = fmts[-1].get('url')
+                    # best mp4 dhoondo
+                    best = None
+                    for f in reversed(fmts):
+                        if f.get('ext') == 'mp4' and f.get('url'):
+                            best = f.get('url')
+                            break
+                    video_url = best or (fmts[-1].get('url') if fmts else None)
 
                 data = {
                     "title": info.get('title'),
@@ -46,5 +54,6 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-type','application/json')
+            self.send_header('Access-Control-Allow-Origin','*')
             self.end_headers()
             self.wfile.write(json.dumps({"error": str(e)}).encode())
