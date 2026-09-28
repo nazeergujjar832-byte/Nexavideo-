@@ -1,38 +1,46 @@
 from http.server import BaseHTTPRequestHandler
 import json
-import urllib.parse
+from urllib.parse import urlparse, parse_qs
 import yt_dlp
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        query = urllib.parse.urlparse(self.path).query
-        params = urllib.parse.parse_qs(query)
-        url = params.get('url', [None])[0]
-
-        if not url:
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(b"<h1>NexaVideo API is Running! Add?url=...</h1>")
-            return
-
         try:
-            ydl_opts = {'quiet': True, 'no_warnings': True}
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            video_url = qs.get('url', [None])[0]
+
+            if not video_url:
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "ok", "message": "API Running! Use?url=YOUTUBE_LINK"}).encode())
+                return
+
+            ydl_opts = {'quiet': True, 'no_warnings': True, 'format': 'best'}
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                data = {
+                info = ydl.extract_info(video_url, download=False)
+                best_url = info.get('url')
+                if not best_url and info.get('formats'):
+                    best_url = info['formats'][-1]['url']
+
+                result = {
                     "status": "success",
                     "title": info.get('title'),
                     "thumbnail": info.get('thumbnail'),
-                    "url": info.get('url') or info['formats'][-1]['url']
+                    "download_url": best_url
                 }
+
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps(data).encode())
+            self.wfile.write(json.dumps(result).encode())
+
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
