@@ -1,1 +1,47 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEXAVIDEO</title><style>body{background:#000;color:#fff;font-family:Arial;text-align:center;padding:20px}h1{font-size:48px;font-weight:900}h1 span{color:red}p{color:#888}.box{background:#111;border:1px solid #333;border-radius:20px;padding:15px;display:flex;max-width:500px;margin:30px auto}input{flex:1;background:#000;border:1px solid #444;color:#fff;padding:15px;border-radius:12px}button{background:#e11d22;border:none;color:#fff;padding:15px 25px;border-radius:12px;margin-left:10px;font-size:20px}#result{max-width:500px;margin:20px auto}.card{background:#111;border:1px solid #333;padding:15px;border-radius:15px} .card a{display:block;background:red;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}</style></head><body><h1><span>NEXA</span>VIDEO</h1><p>YouTube, TikTok, Facebook, Insta - All in One Downloader</p><div class="box"><input id="link" placeholder="Paste video link here.."><button onclick="go()">⬇</button></div><div id="result"></div><script>async function go(){let u=document.getElementById('link').value;let r=document.getElementById('result');if(!u){alert('Link dalo');return}r.innerHTML='Loading...';try{let res=await fetch('/api?url='+encodeURIComponent(u));let d=await res.json();if(d.error){r.innerHTML='<div class=card>Error: '+d.error+'</div>';return}r.innerHTML='<div class=card><img src="'+d.thumbnail+'" style="width:100%;border-radius:10px"><p style="color:#fff;margin-top:10px">'+d.title+'</p><a href="'+d.url+'" target=_blank>Download Video</a></div>';}catch(e){r.innerHTML='<div class=card>Error: '+e.message+'</div>'}}</script></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXAVIDEO</title>
+<style>
+body{background:#000;color:#fff;text-align:center;font-family:Arial;padding:20px}
+h1{font-size:48px;font-weight:900} h1 span{color:red}
+p{color:#888}
+.box{background:#111;border:1px solid #333;border-radius:20px;padding:15px;display:flex;max-width:500px;margin:30px auto}
+input{flex:1;background:#000;border:1px solid #444;color:#fff;padding:15px;border-radius:12px}
+button{background:red;border:none;color:#fff;padding:15px 25px;border-radius:12px;margin-left:10px;font-size:20px;cursor:pointer}
+.card{background:#111;border:1px solid #333;padding:15px;border-radius:15px;max-width:500px;margin:20px auto}
+.card a{display:block;background:red;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}
+.card img{width:100%;border-radius:10px}
+</style>
+</head>
+<body>
+<h1><span>NEXA</span>VIDEO</h1>
+<p>YouTube, TikTok, Facebook, Insta - All in One Downloader</p>
+
+<div class="box">
+<input id="link" placeholder="Paste video link here..">
+<button onclick="go()">⬇</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+async function go(){
+let u=document.getElementById('link').value;
+let r=document.getElementById('result');
+if(!u){alert('Pehle link dalo');return}
+r.innerHTML='Loading...';
+try{
+let res=await fetch('/api?url='+encodeURIComponent(u));
+let d=await res.json();
+if(d.error){r.innerHTML='<div class=card>Error: '+d.error+'</div>';return}
+r.innerHTML='<div class=card><img src="'+d.thumbnail+'"><p>'+d.title+'</p><a href="'+d.url+'" target=_blank>Download Now</a></div>';
+}catch(e){
+r.innerHTML='<div class=card>Error: '+e.message+'</div>';
+}
+}
+</script>
+</body>
+  </html>
