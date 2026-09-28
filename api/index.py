@@ -7,12 +7,5 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        
-        response = {
-            "status": "Nexavideo API is Running!",
-            "creator": "Nazeer Gujjar - LIVE",
-            "message": "Mubarak ho API live ho gayi!"
-        }
-        
-        self.wfile.write(json.dumps(response).encode())
-        return
+        data = {"status": "Nexavideo API is Running!", "creator": "Nazeer Gujjar"}
+        self.wfile.write(json.dumps(data).encode())
