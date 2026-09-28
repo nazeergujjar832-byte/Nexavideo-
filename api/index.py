@@ -1,5 +1,5 @@
 from http.server import BaseHTTPRequestHandler
-import json, yt_dlp
+import json, requests
 from urllib.parse import urlparse, parse_qs
 
 class handler(BaseHTTPRequestHandler):
@@ -14,42 +14,32 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(b'{"error":"URL missing"}')
                 return
 
-            opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'extractor_args': {
-                    'youtube': {
-                        'player_client': ['android', 'ios', 'web']
-                    }
-                },
-                'extractor_retries': 3,
-                'noplaylist': True
+            # Cobalt API use karo - ye bot block nahi hota
+            api_url = "https://api.cobalt.tools/api/json"
+            payload = {"url": url, "vQuality": "720", "vCodec": "h264"}
+            headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+            r = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            data_cobalt = r.json()
+
+            if data_cobalt.get('status') == 'error':
+                raise Exception(data_cobalt.get('text', 'Cobalt error'))
+
+            video_url = data_cobalt.get('url')
+            if not video_url:
+                raise Exception("Video not found, try another link")
+
+            result = {
+                "title": "Video Ready - NEXAVIDEO",
+                "thumbnail": "",
+                "url": video_url
             }
-
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                video_url = info.get('url')
-                if not video_url:
-                    fmts = info.get('formats', [])
-                    # best mp4 dhoondo
-                    best = None
-                    for f in reversed(fmts):
-                        if f.get('ext') == 'mp4' and f.get('url'):
-                            best = f.get('url')
-                            break
-                    video_url = best or (fmts[-1].get('url') if fmts else None)
-
-                data = {
-                    "title": info.get('title'),
-                    "thumbnail": info.get('thumbnail'),
-                    "url": video_url
-                }
 
             self.send_response(200)
             self.send_header('Content-type','application/json')
             self.send_header('Access-Control-Allow-Origin','*')
             self.end_headers()
-            self.wfile.write(json.dumps(data).encode())
+            self.wfile.write(json.dumps(result).encode())
 
         except Exception as e:
             self.send_response(500)
