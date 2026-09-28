@@ -1,50 +1,38 @@
 from http.server import BaseHTTPRequestHandler
 import json
-from urllib.parse import urlparse, parse_qs
+import urllib.parse
 import yt_dlp
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
+        query = urllib.parse.urlparse(self.path).query
+        params = urllib.parse.parse_qs(query)
+        url = params.get('url', [None])[0]
 
-        parsed = urlparse(self.path)
-        query = parse_qs(parsed.query)
-        video_url = query.get('url', [None])[0]
-
-        # Agar URL nahi diya to status dikhao
-        if not video_url:
-            data = {
-                "status": "Nexavideo API is Running!",
-                "creator": "Nazeer Gujjar",
-                "usage": "/api/index.py?url=YOUTUBE_OR_TIKTOK_LINK"
-            }
-            self.wfile.write(json.dumps(data).encode())
+        if not url:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"<h1>NexaVideo API is Running! Add?url=...</h1>")
             return
 
-        # Downloader logic
         try:
-            ydl_opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'format': 'best',
-                'noplaylist': True,
-            }
+            ydl_opts = {'quiet': True, 'no_warnings': True}
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(video_url, download=False)
-
-                response = {
+                info = ydl.extract_info(url, download=False)
+                data = {
                     "status": "success",
                     "title": info.get('title'),
                     "thumbnail": info.get('thumbnail'),
-                    "duration": info.get('duration'),
-                    "url": info.get('url'), # direct link
-                    "ext": info.get('ext'),
-                    "all_formats": len(info.get('formats', []))
+                    "url": info.get('url') or info['formats'][-1]['url']
                 }
-                self.wfile.write(json.dumps(response).encode())
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode())
         except Exception as e:
-            error = {"status": "error", "message": str(e)}
-            self.wfile.write(json.dumps(error).encode())
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
