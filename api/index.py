@@ -1,50 +1,47 @@
 from http.server import BaseHTTPRequestHandler
-import json
-import yt_dlp
+import json, yt_dlp
 from urllib.parse import urlparse, parse_qs
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            query = parse_qs(urlparse(self.path).query)
-            video_url = query.get('url', [None])[0]
-
-            if not video_url:
+            qs = parse_qs(urlparse(self.path).query)
+            url = qs.get('url', [None])[0]
+            if not url:
                 self.send_response(400)
                 self.send_header('Content-type','application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"error":"No URL"}).encode())
+                self.wfile.write(b'{"error":"URL missing"}')
                 return
 
-            ydl_opts = {
+            # FIX: format nahi likhna, yt-dlp khud best le lega
+            opts = {
                 'quiet': True,
                 'no_warnings': True,
-                'format': 'best',
             }
 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(video_url, download=False)
-                formats = []
-                for f in info.get('formats', [])[-10:]:
-                    if f.get('url'):
-                        formats.append({
-                            "quality": f.get('format_note') or f.get('height'),
-                            "ext": f.get('ext'),
-                            "url": f.get('url')
-                        })
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(url, download=False)
 
-                result = {
+                # direct best url
+                video_url = info.get('url')
+                # agar url na mile to formats me se best lo
+                if not video_url:
+                    fmts = info.get('formats', [])
+                    if fmts:
+                        video_url = fmts[-1].get('url')
+
+                data = {
                     "title": info.get('title'),
                     "thumbnail": info.get('thumbnail'),
-                    "formats": formats,
-                    "direct_url": info.get('url')
+                    "url": video_url
                 }
 
             self.send_response(200)
             self.send_header('Content-type','application/json')
             self.send_header('Access-Control-Allow-Origin','*')
             self.end_headers()
-            self.wfile.write(json.dumps(result).encode())
+            self.wfile.write(json.dumps(data).encode())
 
         except Exception as e:
             self.send_response(500)
