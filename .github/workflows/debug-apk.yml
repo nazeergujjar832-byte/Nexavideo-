@@ -1,13 +1,20 @@
-name: Debug APK
-on: [push]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Build Debug APK
-        run: chmod +x./gradlew &&./gradlew assembleDebug
+1 name: Debug APK
+2 on: [push]
+3 jobs:
+4 build:
+5 runs-on: ubuntu-latest
+6 steps:
+7 - uses: actions/checkout@v4
+8 - uses: actions/setup-java@v4
+9 with:
+10 java-version: '17'
+11 distribution: 'temurin'
+12 - name: Grant permission
+13 run: chmod +x gradlew
+14 - name: Build Debug APK
+15 run:./gradlew assembleDebug
+16 - name: Upload APK
+17 uses: actions/upload-artifact@v4
+18 with:
+19 name: NexaVideo-APK
+20 path: app/build/outputs/apk/debug/app-debug.apk
