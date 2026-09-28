@@ -9,22 +9,28 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        query = urlparse(self.path).query
-        params = parse_qs(query)
-        url = params.get('url', [None])[0]
+
+        parsed = urlparse(self.path)
+        query = parse_qs(parsed.query)
+        url = query.get('url', [None])[0]
+
+        # agar url nahi diya to status dikhao
         if not url:
-            self.wfile.write(json.dumps({"status":"ok", "message":"API is Running"}).encode())
+            data = {"status": "Nexavideo API is Running!", "creator": "Nazeer Gujjar"}
+            self.wfile.write(json.dumps(data).encode())
             return
+
         try:
-            ydl_opts = {'quiet': True, 'format': 'best'}
+            ydl_opts = {'quiet': True, 'no_warnings': True, 'format': 'best'}
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-                data = {
-                    "status": "success",
+                result = {
                     "title": info.get('title'),
                     "thumbnail": info.get('thumbnail'),
-                    "download_url": info.get('url') or info['formats'][-1]['url']
+                    "duration": info.get('duration'),
+                    "video_url": info.get('url'),
+                    "formats": info.get('formats')[-5:]
                 }
-                self.wfile.write(json.dumps(data).encode())
+                self.wfile.write(json.dumps(result).encode())
         except Exception as e:
-            self.wfile.write(json.dumps({"status":"error", "message": str(e)}).encode())
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
