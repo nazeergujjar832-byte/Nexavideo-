@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexaVideo - All Video Downloader</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col items-center p-4">
+
+  <div class="mt-10 text-center">
+    <h1 class="text-5xl font-black text-red-600">NEXA<span class="text-white">VIDEO</span></h1>
+    <p class="text-gray-400 mt-2">YouTube, TikTok, Facebook, Insta - All in One Downloader</p>
+  </div>
+
+  <div class="w-full max-w-2xl bg-zinc-900 rounded-2xl p-6 mt-10 shadow-2xl border border-zinc-800">
+    <div class="flex gap-2">
+      <input id="link" type="text" placeholder="Paste video link here..." class="w-full bg-black border border-zinc-700 rounded-xl p-4 outline-none focus:border-red-600">
+      <button onclick="download()" class="bg-red-600 px-8 rounded-xl font-bold hover:bg-red-700"><i class="fas fa-download"></i></button>
+    </div>
+    
+    <div id="result" class="mt-6 hidden">
+      <img id="thumb" class="w-full rounded-xl">
+      <h3 id="title" class="text-xl font-bold mt-4"></h3>
+      <a id="dlink" target="_blank" class="block w-full text-center bg-white text-black p-4 rounded-xl font-bold mt-4 hover:bg-gray-200">DOWNLOAD NOW</a>
+    </div>
+    
+    <div id="loading" class="hidden text-center mt-6 text-red-500 font-bold">Loading... 15 sec lag sakte hain...</div>
+  </div>
+
+  <div class="flex gap-4 mt-8 text-3xl text-zinc-600">
+    <i class="fab fa-youtube text-red-600"></i>
+    <i class="fab fa-tiktok"></i>
+    <i class="fab fa-facebook text-blue-600"></i>
+    <i class="fab fa-instagram text-pink-500"></i>
+  </div>
+
+<script>
+async function download(){
+  let userLink = document.getElementById('link').value.trim();
+  if(!userLink) return alert("Link paste karo bhai!");
+  
+  let api = "/api/index.py?url=" + encodeURIComponent(userLink);
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('result').classList.add('hidden');
+
+  try {
+    let res = await fetch(api);
+    let data = await res.json();
+    
+    if(data.status == "success"){
+      document.getElementById('thumb').src = data.thumbnail;
+      document.getElementById('title').innerText = data.title;
+      document.getElementById('dlink').href = data.url;
+      document.getElementById('result').classList.remove('hidden');
+    } else {
+      alert("Error: " + data.message);
+    }
+  } catch(e){
+    alert("Server busy hai, dobara try karo!");
+  }
+  document.getElementById('loading').classList.add('hidden');
+}
+</script>
+</body>
+  </html>
